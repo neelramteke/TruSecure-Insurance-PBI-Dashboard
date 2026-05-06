@@ -124,5 +124,75 @@ Region · Purchase Date
 ---
 
 ## 🗂️ Data Model
+| Table | Type | Records |
+|---|---|---|
+| FCT_Insurance_Policy_Table | Fact | ~10,000 |
+| DM_Customer_Detail_Table | Dimension | Unique customers |
+| DM_Insurance_Agent_Table | Dimension | 22 agents |
+| DM_Policy_Protection_Plan | Dimension | Policy products |
+| DM_Policy_Type | Dimension | 3 types |
+| DM_Regional_Manager | Dimension | 5 regions |
+| DM_Zonal_Manager | Dimension | 3 zonal managers |
+
+---
+
+## ⚙️ Key DAX Measures
+
+```dax
+Total Policies = COUNTROWS(FCT_Insurance_Policy_Table)
+
+Active Policies = 
+    CALCULATE(COUNTROWS(FCT_Insurance_Policy_Table),
+    FCT_Insurance_Policy_Table[Policy Status] = "Active")
+
+Maturity Amount =
+SUMX('FCT_Insurance_Policy_Table',
+    VAR Premium    = 'FCT_Insurance_Policy_Table'[Premium Amount]
+    VAR Tenure     = 'FCT_Insurance_Policy_Table'[Tenure (Years)]
+    VAR ReturnRate = SWITCH(TRUE(),
+        Tenure <= 5,  0.04, Tenure <= 10, 0.06,
+        Tenure <= 15, 0.08, Tenure <= 20, 0.10, 0.12)
+    RETURN Premium * Tenure * (1 + ReturnRate))
+
+Premium YOY Growth % =
+    VAR LatestYear = MAXX(ALL('FCT_Insurance_Policy_Table'),
+                     'FCT_Insurance_Policy_Table'[Purchase Year])
+    VAR CY = CALCULATE([Total Premium Collected],
+              'FCT_Insurance_Policy_Table'[Purchase Year] = LatestYear)
+    VAR PY = CALCULATE([Total Premium Collected],
+              'FCT_Insurance_Policy_Table'[Purchase Year] = LatestYear - 1)
+    RETURN DIVIDE(CY - PY, PY, BLANK())
+```
+
+---
+
+## 🛠️ Tools Used
+
+| Tool | Purpose |
+|---|---|
+| Power BI Desktop | Dashboard development |
+| Power Query | Data cleaning and transformation |
+| DAX | Measures and calculated columns |
+| Bing Maps | Geographic visuals |
+
+---
+
+## 📁 How to Use
+
+1. Clone or download this repository
+2. Open `TruSecure_Dashboard.pbix` in Power BI Desktop
+3. If data doesn't load, go to **Transform Data → Data Source Settings**
+   and repoint to the CSV files in the `/data` folder
+4. Publish to Power BI Service for sharing and scheduled refresh
+
+---
+
+## 📌 Notes
+
+- Map visuals show a "retiring soon" warning — replace with the newer
+  Azure Maps visual in Power BI for future-proofing
+- RLS (Row Level Security) can be configured for Region and Zonal Manager
+  level access before publishing to Power BI Service
+
 
 Star schema with 1 Fact table and 6 Dimension tables.
